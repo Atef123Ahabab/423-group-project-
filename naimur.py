@@ -242,10 +242,12 @@ def mouseListener(button, state, x, y):
     pass
 
 
-def draw_text(x, y, text, font=GLUT_BITMAP_HELVETICA_18):
+def draw_text(x, y, text, font=None):
     """
     Draws 2D text on screen at specified coordinates.
     """
+    if font is None:
+        font = GLUT_BITMAP_9_BY_15
     glColor3f(1, 1, 1)
     glMatrixMode(GL_PROJECTION)
     glPushMatrix()
@@ -340,6 +342,8 @@ def main():
     glutInitWindowSize(1000, 800)
     glutInitWindowPosition(0, 0)
     wind = glutCreateWindow(b"Skateboard Game - Player Control (Naimur)")
+    
+    glEnable(GL_DEPTH_TEST)  # Enable depth testing for 3D rendering
     
     glutDisplayFunc(showScreen)
     glutKeyboardFunc(keyboardListener)
