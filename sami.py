@@ -161,7 +161,7 @@ def animate():
     # Using idle instead of glutTimerFunc as per constraints
     glutPostRedisplay()
 
-# --- Initialization ---
+
 glutInit()
 glutInitWindowSize(W_WIDTH, W_HEIGHT)
 glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB)
