@@ -1,63 +1,33 @@
-"""
-SAMI - Obstacles & Collision Handling Module
-Features:
-1. Obstacle Generation (boxes, barriers, cones)
-2. Collision Detection with life loss
-3. Life Tokens (Health Pickup)
-"""
-
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 import random
 import math
-
-# ============================================================================
-# WINDOW & GAME STATE VARIABLES
-# ============================================================================
 W_WIDTH, W_HEIGHT = 500, 800
-
-# Player state
 player_x = 225
 player_y = 100
-
-# Obstacle & collision variables
-obstacles = []  # Enhanced: now stores dict objects with type, x, y, width, height
-life_tokens = []  # Enhanced: now stores dict objects with animation
+obstacles = []
+life_tokens = []
 lives = 3
 max_lives = 5
 score = 0
 game_over = False
 paused = False
-
-# Spawning control
 obstacle_spawn_timer = 0
-obstacle_spawn_rate = 60  # frames between spawns
+obstacle_spawn_rate = 60
 token_spawn_rate = 200
-
-# Obstacle types
 obstacle_types = ["box", "barrier", "cone"]
-lanes = [450, 550, 650, 750]  # Four centered lanes for obstacles (matches naimur.py)
-
-# ============================================================================
-# MIDPOINT LINE DRAWING ALGORITHM (Core Requirement)
-# ============================================================================
-# This function handles all 8 octants to ensure proper line drawing
-
+lanes = [450, 550, 650, 750]
 def draw_line(x1, y1, x2, y2):
-    """Midpoint Line Drawing Algorithm - handles all 8 octants"""
     dx = x2 - x1
     dy = y2 - y1
-    
     zone = get_zone(x1, y1, x2, y2)
     x1, y1 = convert_to_zone0(zone, x1, y1)
     x2, y2 = convert_to_zone0(zone, x2, y2)
-    
     dx, dy = x2 - x1, y2 - y1
     d = 2 * dy - dx
     dE = 2 * dy
     dNE = 2 * (dy - dx)
-    
     x, y = x1, y1
     while x <= x2:
         ox, oy = convert_from_zone0(zone, x, y)
@@ -68,15 +38,11 @@ def draw_line(x1, y1, x2, y2):
             d += dNE
             y += 1
         x += 1
-
 def draw_pixel(x, y):
-    """Draw a single pixel"""
     glBegin(GL_POINTS)
     glVertex2i(int(x), int(y))
     glEnd()
-
 def get_zone(x1, y1, x2, y2):
-    """Determine which zone the line belongs to"""
     dx, dy = x2 - x1, y2 - y1
     if abs(dx) > abs(dy):
         if dx >= 0 and dy >= 0: return 0
@@ -88,9 +54,7 @@ def get_zone(x1, y1, x2, y2):
         if dx < 0 and dy >= 0: return 2
         if dx < 0 and dy < 0: return 5
         return 6
-
 def convert_to_zone0(zone, x, y):
-    """Convert coordinates from any zone to zone 0"""
     if zone == 0: return x, y
     if zone == 1: return y, x
     if zone == 2: return y, -x
@@ -99,9 +63,7 @@ def convert_to_zone0(zone, x, y):
     if zone == 5: return -y, -x
     if zone == 6: return -y, x
     return x, -y
-
 def convert_from_zone0(zone, x, y):
-    """Convert coordinates from zone 0 to any zone"""
     if zone == 0: return x, y
     if zone == 1: return y, x
     if zone == 2: return -y, x
@@ -110,31 +72,19 @@ def convert_from_zone0(zone, x, y):
     if zone == 5: return -y, -x
     if zone == 6: return y, -x
     return x, -y
-
-# ============================================================================
-# ENHANCED SHAPE DRAWING UTILITIES
-# ============================================================================
-
 def draw_rectangle(x, y, w, h):
-    """Draw rectangle outline using midpoint line algorithm"""
     draw_line(x, y, x + w, y)
     draw_line(x + w, y, x + w, y + h)
     draw_line(x + w, y + h, x, y + h)
     draw_line(x, y + h, x, y)
-
 def draw_filled_rect(x, y, w, h):
-    """Draw filled rectangle using horizontal lines"""
     for i in range(int(h)):
         draw_line(int(x), int(y + i), int(x + w), int(y + i))
-
 def draw_circle_midpoint(cx, cy, radius):
-    """Draw circle using Midpoint Circle Algorithm"""
     x = 0
     y = radius
     d = 1 - radius
-    
     while x <= y:
-        # Draw 8 octants
         draw_pixel(cx + x, cy + y)
         draw_pixel(cx - x, cy + y)
         draw_pixel(cx + x, cy - y)
@@ -143,38 +93,21 @@ def draw_circle_midpoint(cx, cy, radius):
         draw_pixel(cx - y, cy + x)
         draw_pixel(cx + y, cy - x)
         draw_pixel(cx - y, cy - x)
-        
         if d < 0:
             d += 2 * x + 3
         else:
             d += 2 * (x - y) + 5
             y -= 1
         x += 1
-
 def draw_filled_circle(cx, cy, radius):
-    """Draw filled circle"""
     for r in range(radius, 0, -2):
         draw_circle_midpoint(cx, cy, r)
-
-# ============================================================================
-# FEATURE 1: OBSTACLE GENERATION
-# ============================================================================
-
 def spawn_obstacle():
-    """
-    FEATURE 1: Obstacle Generation
-    - Spawns random obstacles (box, barrier, cone) on the road
-    - Obstacles appear in one of four centered lanes
-    - Each obstacle type has different dimensions and behaviors
-    """
     global obstacles, obstacle_types, lanes
-    
-    # Random obstacle type and lane
     obs_type = random.choice(obstacle_types)
-    lane = random.randint(0, 3)  # 4 lanes: 0, 1, 2, 3
+    lane = random.randint(0, 3)
     x = lanes[lane]
-    y = W_HEIGHT + 50  # Spawn above screen
-    
+    y = W_HEIGHT + 50
     obstacle = {
         "type": obs_type,
         "x": x,
@@ -183,36 +116,18 @@ def spawn_obstacle():
         "height": 40 if obs_type != "barrier" else 20,
         "lane": lane
     }
-    
     obstacles.append(obstacle)
     print(f"Spawned {obs_type} obstacle in lane {lane}")
-
 def update_obstacles(speed=5):
-    """
-    Update obstacle positions
-    - Moves obstacles down the screen
-    - Removes obstacles that go off-screen
-    """
     global obstacles, score
-    
     for obs in obstacles[:]:
         obs["y"] -= speed
-        
-        # Remove off-screen obstacles and add score
         if obs["y"] < -100:
             obstacles.remove(obs)
             score += 1
-
 def draw_obstacles():
-    """
-    Draw all obstacles with different appearances based on type
-    - Box: Brown crate with outline
-    - Barrier: Yellow and black construction barrier
-    - Cone: Orange traffic cone with white stripe
-    """
     for obs in obstacles:
         if obs["type"] == "box":
-            # Brown box/crate
             glColor3f(0.6, 0.3, 0.0)
             draw_filled_rect(
                 obs["x"] - obs["width"]/2,
@@ -220,7 +135,6 @@ def draw_obstacles():
                 obs["width"],
                 obs["height"]
             )
-            # Box outline
             glColor3f(0.4, 0.2, 0.0)
             draw_rectangle(
                 obs["x"] - obs["width"]/2,
@@ -228,9 +142,7 @@ def draw_obstacles():
                 obs["width"],
                 obs["height"]
             )
-            
         elif obs["type"] == "barrier":
-            # Yellow and black construction barrier
             glColor3f(0.9, 0.9, 0.1)
             draw_filled_rect(
                 obs["x"] - obs["width"]/2,
@@ -238,18 +150,14 @@ def draw_obstacles():
                 obs["width"],
                 obs["height"]
             )
-            # Black stripes
             glColor3f(0.0, 0.0, 0.0)
             for i in range(0, int(obs["width"]), 10):
                 draw_line(
                     obs["x"] - obs["width"]/2 + i, obs["y"],
                     obs["x"] - obs["width"]/2 + i, obs["y"] + obs["height"]
                 )
-            
         elif obs["type"] == "cone":
-            # Orange traffic cone (triangle)
             glColor3f(1.0, 0.5, 0.0)
-            # Draw triangle using filled lines
             for i in range(int(obs["height"])):
                 ratio = i / obs["height"]
                 width = obs["width"] * (1 - ratio)
@@ -257,8 +165,6 @@ def draw_obstacles():
                     int(obs["x"] - width/2), int(obs["y"] + i),
                     int(obs["x"] + width/2), int(obs["y"] + i)
                 )
-            
-            # White stripe on cone
             glColor3f(1.0, 1.0, 1.0)
             stripe_y = obs["y"] + obs["height"] * 0.6
             stripe_width = obs["width"] * 0.5
@@ -267,24 +173,11 @@ def draw_obstacles():
                     int(obs["x"] - stripe_width/2), int(stripe_y + i),
                     int(obs["x"] + stripe_width/2), int(stripe_y + i)
                 )
-
-# ============================================================================
-# FEATURE 3: LIFE TOKENS (Health Pickup)
-# ============================================================================
-
 def spawn_life_token():
-    """
-    FEATURE 3: Life Tokens (Health Pickup)
-    - Spawns heart-shaped life token on the road
-    - Randomly appears in one of four centered lanes
-    - Restores one life when collected
-    """
     global life_tokens, lanes
-    
-    lane = random.randint(0, 3)  # 4 lanes: 0, 1, 2, 3
+    lane = random.randint(0, 3)
     x = lanes[lane]
-    y = W_HEIGHT + 50  # Spawn above screen
-    
+    y = W_HEIGHT + 50
     token = {
         "x": x,
         "y": y,
@@ -292,43 +185,22 @@ def spawn_life_token():
         "lane": lane,
         "animation": 0
     }
-    
     life_tokens.append(token)
     print(f"Spawned life token in lane {lane}")
-
 def update_life_tokens(speed=5):
-    """
-    Update life token positions and animations
-    - Moves tokens down the screen
-    - Animates pulsing effect
-    """
     global life_tokens
-    
     for token in life_tokens[:]:
         token["y"] -= speed
         token["animation"] += 0.1
-        
-        # Remove off-screen tokens
         if token["y"] < -50:
             life_tokens.remove(token)
-
 def draw_life_tokens():
-    """
-    Draw collectible life tokens with pulsing heart animation
-    - Red heart shape made with circles and triangle
-    - Pulsing animation to attract attention
-    """
     for token in life_tokens:
-        # Pulsing animation
         pulse = 1.0 + math.sin(token["animation"]) * 0.2
         size = token["size"] * pulse
-        
-        # Red heart (two circles on top)
         glColor3f(1.0, 0.0, 0.0)
         draw_filled_circle(int(token["x"] - size/4), int(token["y"] + size/2), int(size/3))
         draw_filled_circle(int(token["x"] + size/4), int(token["y"] + size/2), int(size/3))
-        
-        # Heart bottom (triangle using filled lines)
         for i in range(int(size/2)):
             ratio = i / (size/2)
             width = size * (1 - ratio)
@@ -336,36 +208,16 @@ def draw_life_tokens():
                 int(token["x"] - width/2), int(token["y"] + size/4 - i),
                 int(token["x"] + width/2), int(token["y"] + size/4 - i)
             )
-        
-        # White glow in center (smaller circle)
         glColor3f(1.0, 1.0, 1.0)
         draw_filled_circle(int(token["x"]), int(token["y"]), int(size * 0.2))
-
-# ============================================================================
-# FEATURE 2: COLLISION DETECTION
-# ============================================================================
-
 def check_collision_rect(obj1_x, obj1_y, obj1_w, obj1_h, obj2_x, obj2_y, obj2_w, obj2_h):
-    """
-    AABB (Axis-Aligned Bounding Box) collision detection
-    - Returns True if two rectangles overlap
-    """
     return (obj1_x < obj2_x + obj2_w and
             obj1_x + obj1_w > obj2_x and
             obj1_y < obj2_y + obj2_h and
             obj1_y + obj1_h > obj2_y)
-
 def handle_obstacle_collisions(player_x, player_y, player_width=50, player_height=60):
-    """
-    FEATURE 2: Collision Detection with Obstacles
-    - Checks player collision with obstacles
-    - Triggers life loss when collision occurs
-    - Returns True if collision happened
-    """
     global obstacles, lives, game_over
-    
     collision_occurred = False
-    
     for obs in obstacles[:]:
         if check_collision_rect(
             player_x - player_width/2, player_y,
@@ -376,26 +228,14 @@ def handle_obstacle_collisions(player_x, player_y, player_width=50, player_heigh
             obstacles.remove(obs)
             lives -= 1
             collision_occurred = True
-            
             print(f"Collision! Lives remaining: {lives}")
-            
             if lives <= 0:
                 game_over = True
                 print("Game Over! No lives remaining!")
-    
     return collision_occurred
-
 def handle_token_collection(player_x, player_y, player_width=50, player_height=60):
-    """
-    FEATURE 3: Life Token Collection
-    - Checks if player collected a life token
-    - Restores one life (up to max_lives)
-    - Returns True if token was collected
-    """
     global life_tokens, lives
-    
     token_collected = False
-    
     for token in life_tokens[:]:
         if check_collision_rect(
             player_x - player_width/2, player_y,
@@ -408,141 +248,74 @@ def handle_token_collection(player_x, player_y, player_width=50, player_height=6
                 lives += 1
                 token_collected = True
                 print(f"Life token collected! Lives: {lives}")
-    
     return token_collected
-
-# ============================================================================
-# COMBINED UPDATE GAME FUNCTION
-# ============================================================================
-
 def update_game():
-    """
-    Main game update function - combines all features
-    - Updates obstacle and token positions
-    - Checks collisions
-    - Handles spawning
-    """
     global player_x, obstacles, life_tokens, lives, score, game_over, paused
     global obstacle_spawn_timer
-    
     if game_over or paused:
         return
-    
-    # Update obstacles and tokens
     update_obstacles(5)
     update_life_tokens(5)
-    
-    # Check collisions
     handle_obstacle_collisions(player_x, player_y)
     handle_token_collection(player_x, player_y)
-    
-    # Spawn obstacles
     obstacle_spawn_timer += 1
     if obstacle_spawn_timer >= obstacle_spawn_rate:
         spawn_obstacle()
         obstacle_spawn_timer = 0
-    
-    # Spawn life tokens (less frequently)
     if random.random() < 0.005:
         spawn_life_token()
-
-# ============================================================================
-# DISPLAY & UI FUNCTIONS
-# ============================================================================
-
 def display():
-    """Main display function for standalone demo"""
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glPointSize(2)
-
-    # Draw Road Borders
     glColor3f(1, 1, 1)
     draw_line(50, 0, 50, W_HEIGHT)
     draw_line(450, 0, 450, W_HEIGHT)
-
-    # Draw Player (simple skateboard character)
-    glColor3f(0, 1, 1)  # Cyan Player
-    draw_rectangle(player_x - 25, player_y, 50, 20)  # Skateboard
-    draw_rectangle(player_x - 15, player_y + 20, 30, 40)  # Character
-
-    # Draw Sami's Obstacles (using enhanced drawing)
+    glColor3f(0, 1, 1)
+    draw_rectangle(player_x - 25, player_y, 50, 20)
+    draw_rectangle(player_x - 15, player_y + 20, 30, 40)
     draw_obstacles()
-
-    # Draw Sami's Life Tokens (enhanced heart shapes)
     draw_life_tokens()
-    
-    # Display HUD
     glColor3f(1, 1, 1)
     draw_text(10, W_HEIGHT - 30, f"Lives: {lives} | Score: {score}")
-    
     if game_over:
         glColor3f(1, 0, 0)
         draw_text(W_WIDTH/2 - 50, W_HEIGHT/2, "GAME OVER!")
-
     update_game()
     glutSwapBuffers()
-
 def draw_text(x, y, text):
-    """Draw text on screen"""
     try:
         glRasterPos2f(x, y)
         for char in text:
             glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord(char))
     except:
-        pass  # GLUT fonts not available
-
-# ============================================================================
-# INPUT HANDLERS
-# ============================================================================
-
+        pass
 def keyboard(key, x, y):
-    """Keyboard input handler"""
     global player_x, game_over, paused
-    
     if key == b'a' and player_x > 100:
-        player_x -= 125  # Move to left lane
+        player_x -= 125
     elif key == b'd' and player_x < 350:
-        player_x += 125  # Move to right lane
+        player_x += 125
     elif key == b'p':
         paused = not paused
     elif key == b'r':
         reset_game()
-    
     glutPostRedisplay()
-
 def animate():
-    """Animation/idle function"""
     if not game_over and not paused:
         glutPostRedisplay()
-
-# ============================================================================
-# GETTERS AND SETTERS (For integration with main game)
-# ============================================================================
-
 def get_lives():
-    """Return current lives"""
     return lives
-
 def set_lives(new_lives):
-    """Set lives"""
     global lives
     lives = new_lives
-
 def get_obstacles():
-    """Return obstacles list"""
     return obstacles
-
 def get_life_tokens():
-    """Return life tokens list"""
     return life_tokens
-
 def set_obstacle_spawn_rate(rate):
-    """Set obstacle spawn rate"""
     global obstacle_spawn_rate
     obstacle_spawn_rate = rate
-
 def reset_game():
-    """Reset all game variables"""
     global obstacles, life_tokens, lives, score, game_over, paused, obstacle_spawn_timer
     obstacles.clear()
     life_tokens.clear()
@@ -552,36 +325,25 @@ def reset_game():
     paused = False
     obstacle_spawn_timer = 0
     print("Game reset!")
-
 def reset_obstacles():
-    """Reset only obstacles and life tokens"""
     global obstacles, life_tokens, obstacle_spawn_timer
     obstacles.clear()
     life_tokens.clear()
     obstacle_spawn_timer = 0
     print("Obstacles and life tokens reset!")
-
-# ============================================================================
-# MAIN FUNCTION (For standalone testing)
-# ============================================================================
-
 def main():
-    """Initialize and run standalone demo"""
     glutInit()
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
     glutInitWindowSize(W_WIDTH, W_HEIGHT)
     glutInitWindowPosition(100, 100)
     glutCreateWindow(b"Sami's Features - Obstacles & Collision Demo")
-    
     glClearColor(0.1, 0.1, 0.2, 1.0)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     gluOrtho2D(0, W_WIDTH, 0, W_HEIGHT)
-    
     glutDisplayFunc(display)
     glutIdleFunc(animate)
     glutKeyboardFunc(keyboard)
-    
     print("=" * 60)
     print("SAMI'S FEATURES DEMO - Obstacles & Collision Handling")
     print("=" * 60)
@@ -596,12 +358,6 @@ def main():
     print("  R - Reset")
     print("\nGOAL: Dodge obstacles and collect hearts!")
     print("=" * 60)
-    
     glutMainLoop()
-
 if __name__ == "__main__":
     main()
-
-
-# Module can be imported - functions available for use
-# All features accessible through function calls
