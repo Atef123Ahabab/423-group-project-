@@ -18,6 +18,7 @@ camera_mode = "third_person"
 background_offset = 0
 weather_effect = "clear"
 time_period = "prehistoric"
+day_night_cycle = "day"
 bg_layers = [
     {"offset": 0, "speed": 0.15, "type": "mountains_far"},
     {"offset": 0, "speed": 0.35, "type": "volcano"},
@@ -52,10 +53,20 @@ def draw_triangle(x1, y1, x2, y2, x3, y3):
     glVertex2f(x3, y3)
     glEnd()
 def draw_prehistoric_background():
-    global bg_layers, background_offset
-    glColor3f(0.8, 0.5, 0.3)
+    global bg_layers, background_offset, day_night_cycle
+    if day_night_cycle == "day":
+        glColor3f(0.8, 0.5, 0.3)
+    elif day_night_cycle == "dusk":
+        glColor3f(0.6, 0.3, 0.2)
+    else:
+        glColor3f(0.15, 0.1, 0.2)
     draw_filled_rect(0, 0, W_WIDTH, W_HEIGHT)
-    glColor3f(0.95, 0.8, 0.5)
+    if day_night_cycle == "day":
+        glColor3f(0.95, 0.8, 0.5)
+    elif day_night_cycle == "dusk":
+        glColor3f(0.9, 0.5, 0.2)
+    else:
+        glColor3f(0.7, 0.7, 0.8)
     draw_circle(1000, 650, 60)
     layer = bg_layers[0]
     glColor3f(0.3, 0.25, 0.2)
@@ -140,6 +151,10 @@ def draw_weather_effects():
 def trigger_camera_shake(intensity):
     global camera_shake
     camera_shake = intensity
+
+def trigger_camera_zoom(zoom_level, duration=30):
+    global camera_zoom
+    camera_zoom = zoom_level
 def apply_camera_shake():
     global camera_shake
     if camera_shake > 0:
@@ -186,26 +201,33 @@ def update_background(player_speed):
         if layer["offset"] > 800:
             layer["offset"] = 0
 def update_environment_based_on_score(score):
-    global weather_effect
-    if score > 500 and score < 1000:
+    global weather_effect, day_night_cycle
+    if score < 300:
+        day_night_cycle = "day"
+        weather_effect = "clear"
+    elif score >= 300 and score < 800:
+        day_night_cycle = "dusk"
         weather_effect = "dust"
-    elif score > 1000:
+    elif score >= 800 and score < 1500:
+        day_night_cycle = "night"
         weather_effect = "volcano"
     else:
-        weather_effect = "clear"
+        day_night_cycle = "night"
+        weather_effect = "volcano"
 def scale_difficulty_with_score(score, level):
     obstacle_spawn_rate = max(30, 60 - level * 5)
     sami.set_obstacle_spawn_rate(obstacle_spawn_rate)
     return obstacle_spawn_rate
 def reset_game_state():
     global game_state, game_time, camera_shake, camera_zoom
-    global background_offset, weather_effect, bg_layers
+    global background_offset, weather_effect, bg_layers, day_night_cycle
     game_state = "playing"
     game_time = 0
     camera_shake = 0
     camera_zoom = 1.0
     background_offset = 0
     weather_effect = "clear"
+    day_night_cycle = "day"
     for layer in bg_layers:
         layer["offset"] = 0
     naimur.reset_player()
@@ -315,10 +337,16 @@ def update():
         token_collected = sami.handle_token_collection(player_x, player_y, player_width, player_height)
         if token_collected:
             trigger_camera_shake(3)
+            trigger_camera_zoom(1.15, 20)
         tithi.update_score(player_speed, game_state)
         tithi.update_level_progression(tithi.update_difficulty)
         update_environment_based_on_score(score)
         scale_difficulty_with_score(score, level)
+        global camera_zoom
+        if camera_zoom > 1.0:
+            camera_zoom = max(1.0, camera_zoom - 0.01)
+        elif camera_zoom < 1.0:
+            camera_zoom = min(1.0, camera_zoom + 0.01)
         if game_time % tithi.get_obstacle_spawn_rate_from_difficulty() == 0:
             sami.spawn_obstacle()
         if random.randint(0, 300) == 0:
