@@ -190,49 +190,52 @@ def draw_prehistoric_background():
 
 def draw_prehistoric_road():
     """
-    Draw the stone age road with rock textures
+    Draw the stone age road with rock textures - CENTERED 4-LANE ROAD
+    Road spans from x=400 to x=800 (400px wide, centered in 1200px window)
     """
     global background_offset
     
-    # Stone/dirt road surface
+    # Stone/dirt road surface (centered)
     glColor3f(0.4, 0.35, 0.25)  # Brown dirt road
-    draw_filled_rect(50, 0, 350, W_HEIGHT)
+    draw_filled_rect(400, 0, 400, W_HEIGHT)  # Centered 400px wide road
     
     # Rock textures on road
     glColor3f(0.35, 0.3, 0.2)  # Darker rocks
     rock_offset = int(background_offset) % 100
     for y in range(-rock_offset, W_HEIGHT, 100):
-        for x in [60, 150, 240, 330]:
+        for x in [420, 500, 580, 660, 740, 780]:  # Spread across 4 lanes
             if random.randint(0, 2) == 0:
                 draw_circle(x + random.randint(-10, 10), y + random.randint(0, 50), random.randint(5, 12))
     
-    # Cave paintings on road edges (lane markings)
+    # Cave paintings on road edges (lane markings for 4 lanes)
     glColor3f(0.6, 0.5, 0.4)  # Light stone color
     lane_offset = int(background_offset) % 80
     for y in range(-lane_offset, W_HEIGHT, 80):
-        # Primitive symbols instead of lane lines
-        # Left lane marker
-        draw_filled_rect(135, y, 15, 30)
-        # Right lane marker  
-        draw_filled_rect(255, y, 15, 30)
+        # Primitive symbols instead of lane lines (3 markers for 4 lanes)
+        # Lane marker 1 (between lane 0 and 1)
+        draw_filled_rect(495, y, 10, 30)
+        # Lane marker 2 (between lane 1 and 2)
+        draw_filled_rect(595, y, 10, 30)
+        # Lane marker 3 (between lane 2 and 3)
+        draw_filled_rect(695, y, 10, 30)
     
     # Road edges - stone borders
     glColor3f(0.5, 0.45, 0.35)  # Stone color
-    draw_filled_rect(45, 0, 10, W_HEIGHT)
-    draw_filled_rect(395, 0, 10, W_HEIGHT)
+    draw_filled_rect(395, 0, 10, W_HEIGHT)  # Left edge
+    draw_filled_rect(795, 0, 10, W_HEIGHT)  # Right edge
     
-    # Add some bones on the road edges
+    # Add some bones on the road edges (centered road)
     glColor3f(0.9, 0.85, 0.8)  # Bone white
     bone_offset = int(background_offset * 0.7) % 150
     for y in range(-bone_offset, W_HEIGHT, 150):
-        # Left side bones
-        draw_filled_rect(20, y, 20, 8)
-        draw_circle(18, y + 4, 6)
-        draw_circle(42, y + 4, 6)
-        # Right side bones
-        draw_filled_rect(410, y + 50, 20, 8)
-        draw_circle(408, y + 54, 6)
-        draw_circle(432, y + 54, 6)
+        # Left side bones (before road starts)
+        draw_filled_rect(350, y, 20, 8)
+        draw_circle(348, y + 4, 6)
+        draw_circle(372, y + 4, 6)
+        # Right side bones (after road ends)
+        draw_filled_rect(820, y + 50, 20, 8)
+        draw_circle(818, y + 54, 6)
+        draw_circle(842, y + 54, 6)
 
 def draw_weather_effects():
     """
@@ -600,14 +603,28 @@ def keyboard_handler(key, x, y):
     if game_state != "playing":
         return
     
-    if key == b' ':
+    # Jump controls (Space or W)
+    if key == b' ' or key == b'w' or key == b'W':
         naimur.jump()
     
+    # Slide controls (Down arrow or S)
+    if key == b's' or key == b'S':
+        naimur.slide()
+    
+    # Left movement (A)
+    if key == b'a' or key == b'A':
+        naimur.move_left()
+    
+    # Right movement (D)
+    if key == b'd' or key == b'D':
+        naimur.move_right()
+    
+    # Camera toggle
     if key == b'c' or key == b'C' or key == b'v' or key == b'V':
         toggle_camera_mode()
 
 def special_keyboard_handler(key, x, y):
-    """Handle arrow keys"""
+    """Handle arrow keys (Alternative to WASD)"""
     if game_state != "playing":
         return
     
@@ -617,6 +634,8 @@ def special_keyboard_handler(key, x, y):
         naimur.move_right()
     elif key == GLUT_KEY_DOWN:
         naimur.slide()
+    elif key == GLUT_KEY_UP:
+        naimur.jump()
 
 # ============================================================================
 # INITIALIZATION & MAIN
@@ -673,14 +692,18 @@ def main():
     print("  ✓ Difficulty Scaling System")
     print("  ✓ Prehistoric Background (Parallax, Volcano, Dinosaurs)")
     print("=" * 70)
-    print("\nCONTROLS:")
-    print("  ←/→ Arrow Keys  - Move Left/Right")
-    print("  Space Bar      - Jump")
-    print("  ↓ Down Arrow   - Slide")
-    print("  P              - Pause/Resume")
-    print("  R              - Restart Game")
-    print("  C or V         - Toggle Camera View")
-    print("  ESC            - Exit")
+    print("\nCONTROLS (Easy & User-Friendly):")
+    print("  Movement:")
+    print("    • A or ← (Left Arrow)   - Move Left")
+    print("    • D or → (Right Arrow)  - Move Right")
+    print("    • W or ↑ or Space       - Jump")
+    print("    • S or ↓ (Down Arrow)   - Slide")
+    print("  ")
+    print("  Game Controls:")
+    print("    • P              - Pause/Resume")
+    print("    • R              - Restart Game")
+    print("    • C or V         - Toggle Camera View")
+    print("    • ESC            - Exit")
     print("=" * 70)
     print("\nOBJECTIVE:")
     print("  • Survive in the prehistoric era!")

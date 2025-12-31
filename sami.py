@@ -37,7 +37,7 @@ token_spawn_rate = 200
 
 # Obstacle types
 obstacle_types = ["box", "barrier", "cone"]
-lanes = [100, 225, 350]  # Three lanes for obstacles
+lanes = [450, 550, 650, 750]  # Four centered lanes for obstacles (matches naimur.py)
 
 # ============================================================================
 # MIDPOINT LINE DRAWING ALGORITHM (Core Requirement)
@@ -164,14 +164,14 @@ def spawn_obstacle():
     """
     FEATURE 1: Obstacle Generation
     - Spawns random obstacles (box, barrier, cone) on the road
-    - Obstacles appear in one of three lanes
+    - Obstacles appear in one of four centered lanes
     - Each obstacle type has different dimensions and behaviors
     """
     global obstacles, obstacle_types, lanes
     
     # Random obstacle type and lane
     obs_type = random.choice(obstacle_types)
-    lane = random.randint(0, 2)
+    lane = random.randint(0, 3)  # 4 lanes: 0, 1, 2, 3
     x = lanes[lane]
     y = W_HEIGHT + 50  # Spawn above screen
     
@@ -276,12 +276,12 @@ def spawn_life_token():
     """
     FEATURE 3: Life Tokens (Health Pickup)
     - Spawns heart-shaped life token on the road
-    - Randomly appears in one of three lanes
+    - Randomly appears in one of four centered lanes
     - Restores one life when collected
     """
     global life_tokens, lanes
     
-    lane = random.randint(0, 2)
+    lane = random.randint(0, 3)  # 4 lanes: 0, 1, 2, 3
     x = lanes[lane]
     y = W_HEIGHT + 50  # Spawn above screen
     

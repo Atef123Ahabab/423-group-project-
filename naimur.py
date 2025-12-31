@@ -29,22 +29,22 @@ GRID_LENGTH = 600
 # ============================================================================
 
 # Player position and movement (2D mode)
-player_x_2d = 200.0  # Horizontal position (left/right on road)
+player_x_2d = 550.0  # Horizontal position (left/right on road)
 player_y_2d = 150.0  # Vertical position (jumping)
 player_base_y = 150.0
 ground_y = 150.0  # Ground level for 2D mode
-player_lane = 1  # 0=left, 1=center, 2=right
-lanes_2d = [100, 200, 300]
+player_lane = 1  # 0=left-inner, 1=center-left, 2=center-right, 3=right-inner (4 lanes)
+lanes_2d = [450, 550, 650, 750]  # 4 centered lanes
 
 # Window dimensions (for 2D mode)
 window_width = 1200
 window_height = 800
 
 # Player position (3D mode)
-player_x = 0  # Horizontal position (-200 to 200 range for 3 lanes)
+player_x = -50  # Horizontal position (-200 to 200 range for 4 lanes)
 player_y = -400  # Fixed forward position
 player_z = 30  # Height above ground
-lanes_3d = [-100, 0, 100]
+lanes_3d = [-150, -50, 50, 150]  # 4 lanes for 3D mode
 
 # Movement states
 player_velocity_x = 0  # Horizontal velocity
@@ -66,7 +66,7 @@ slide_duration = 0
 slide_duration_frames = 30
 
 # Lane system
-current_lane = 1  # Middle lane (0, 1, 2)
+current_lane = 1  # 4-lane system (0=left, 1=center-left, 2=center-right, 3=right)
 
 # Jump mechanics
 jump_velocity = 0
