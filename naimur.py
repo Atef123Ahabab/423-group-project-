@@ -71,9 +71,9 @@ current_lane = 1  # 4-lane system (0=left, 1=center-left, 2=center-right, 3=righ
 # Jump mechanics
 jump_velocity = 0
 gravity_3d = -1.5
-gravity_2d = -0.8
+gravity_2d = -1.2  # Gravity pulls down (negative acceleration)
 jump_strength_3d = 20
-jump_strength_2d = 15
+jump_strength_2d = 18  # Initial upward velocity when jumping
 ground_level = 30
 
 # Animation variables
@@ -378,15 +378,22 @@ def update_player_movement():
         # Update animation frame
         animation_frame += player_speed * 0.1
         
-        # Apply gravity
-        if player_y_2d > ground_y or player_velocity_y > 0:
-            player_velocity_y -= gravity_2d
+        # JUMP PHYSICS - Apply gravity when jumping or in air
+        if player_is_jumping:
+            # Apply gravity to velocity
+            player_velocity_y += gravity_2d
+            # Update vertical position
             player_y_2d += player_velocity_y
             
+            # Check if landed on ground
             if player_y_2d <= ground_y:
                 player_y_2d = ground_y
                 player_velocity_y = 0
                 player_is_jumping = False
+        else:
+            # Make sure player stays on ground when not jumping
+            player_y_2d = ground_y
+            player_velocity_y = 0
         
         # Update sliding
         if player_is_sliding:
